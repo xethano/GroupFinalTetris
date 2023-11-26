@@ -1,6 +1,7 @@
 #include "common.h"
 #include "MainEngine.h"
 #include <Windows.h>
+#include <iostream>
 
 MainEngine::MainEngine()
 {
@@ -29,13 +30,17 @@ MainEngine::MainEngine()
 	playerCoord_y = 1;
 	playerPiece = 1;
 	playerRotation = 0;
+	nextPlayerPiece = rand() % 7;
+	
 	
 
 	ScoreFont = new sf::Font();
 	bool bLoaded = ScoreFont->loadFromFile("ozone.ttf");
 	ScoreText = new sf::Text(*ScoreFont);
+	NextPieceText = new sf::Text(*ScoreFont);
 
 	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32, scoreDisplay_coordY * 32));
+	NextPieceText->setPosition(sf::Vector2f( (NextPieceDisplay_coordX + 3) * 32, (NextPieceDisplay_coordY - 2) * 32));
 
 	SoundBuffer_PieceDrop.loadFromFile("audio/landed.wav");
 	Sound_PieceDrop = new sf::Sound(SoundBuffer_PieceDrop);
@@ -50,7 +55,7 @@ MainEngine::MainEngine()
 
 MainEngine::~MainEngine()
 {
-
+	delete Sound_PieceDrop;
 }
 
 void MainEngine::MainLoop()
@@ -88,6 +93,13 @@ void MainEngine::MainLoop()
 
 		window->clear();
 
+		if (endGame)
+		{
+			std::cout << "You lose" << std::endl;
+			window->close();
+			break;
+		}
+
 		// do your drawing and moving and event processing here
 		DrawEverything();
 		MovePieces();
@@ -107,25 +119,17 @@ void MainEngine::DrawTile(int x, int y, int sprite_index)
 
 void MainEngine::LoadTextureAndSprites()
 {
+	//                    Sprite Index          0        1       2         3....
 	std::vector<std::string> SpriteNames = { "Black", "Cyan", "Purple", "Yellow", "Green", "Blue", "White", "Red", "Orange" };
 	int sz = SpriteNames.size();
 	for (int i = 0; i < sz; i++)
 	{
-		for (int j = 0; j < 4; j++)
-		{
-			std::string postfix = "";
-			if (j > 0)
-			{
-				postfix = std::to_string(j);
-			}
-			std::string filename = "Graphics\\tile_" + SpriteNames[i] + postfix + ".png";
-			sf::Texture* t1 = new sf::Texture();
-			t1->loadFromFile(filename);
-			Textures.push_back(t1);
-			sf::Sprite* s1 = new sf::Sprite(*t1);
-			Sprites.push_back(s1);
-		}
-		
+		std::string filename = "Graphics\\tile_" + SpriteNames[i] + ".png";
+		sf::Texture* t1 = new sf::Texture();
+		t1->loadFromFile(filename);
+		Textures.push_back(t1);
+		sf::Sprite* s1 = new sf::Sprite(*t1);
+		Sprites.push_back(s1);
 	}
 }
 
@@ -170,7 +174,7 @@ void MainEngine::InitializeGrid()
 		for (int x = 0; x < GridWidth; x++)
 		{
 			
-			TetrisGrid[y][x] = 21;
+			TetrisGrid[y][x] = 7;
 		}
 	}
 
@@ -179,7 +183,15 @@ void MainEngine::InitializeGrid()
 		for (int x = 0; x < scoreDisplay_width; x++)
 		{
 			
-			TetrisGrid[y + scoreDisplay_coordY - 1][x + scoreDisplay_coordX - 1] = 0; // empty, allows falling
+			TetrisGrid[y + scoreDisplay_coordY - 1][x + scoreDisplay_coordX - 1] = Tile_Empty; // empty, allows falling
+		}
+	}
+
+	for (int y = 0; y < NextPieceDisplay_height; y++)
+	{
+		for (int x = 0; x < NextPieceDisplay_width; x++)
+		{
+			TetrisGrid[y + NextPieceDisplay_coordY -2][x + NextPieceDisplay_coordX + 3] = Tile_Empty;
 		}
 	}
 
@@ -189,7 +201,7 @@ void MainEngine::InitializeGrid()
 		{
 			int x0 = x + playGrid_x_Offset; //include offset
 			int y0 = y + playGrid_y_Offset;
-			TetrisGrid[y0][x0] = 0; // empty, allows falling
+			TetrisGrid[y0][x0] = Tile_Empty; // empty, allows falling
 		}
 	}
 
@@ -204,14 +216,14 @@ void MainEngine::InitializeGrid()
 
 	for (int y = -1; y <= playGrid_height; y++)
 	{
-		TetrisGrid[y + playGrid_y_Offset][9] = 17;
-		TetrisGrid[y + playGrid_y_Offset][20] = 17;
+		TetrisGrid[y + playGrid_y_Offset][9] = Tile_Cyan;
+		TetrisGrid[y + playGrid_y_Offset][20] = Tile_Cyan;
 	}
 	
 	for (int x = 0; x < playGrid_width; x++)
 	{
-		TetrisGrid[7][ x + playGrid_x_Offset] = 17;
-		TetrisGrid[32][x + playGrid_x_Offset] = 17;
+		TetrisGrid[7][ x + playGrid_x_Offset] = Tile_Cyan;
+		TetrisGrid[32][x + playGrid_x_Offset] = Tile_Cyan;
 	}
 
 
@@ -230,11 +242,18 @@ void MainEngine::DrawEverything()
 		}
 	}
 
-	DrawPiece();
+	
+	DrawPiece(NextPieceDisplay_coordX + 6, NextPieceDisplay_coordY + 1, nextPlayerPiece, 0);
+
+	DrawPiece(playerCoord_x + playGrid_x_Offset, playerCoord_y + playGrid_y_Offset, playerPiece, playerRotation);
 
 	ScoreText->setCharacterSize(24);
 	ScoreText->setString("Score: " + std::to_string(Score));
 	window->draw(*ScoreText);
+
+	NextPieceText->setCharacterSize(32);
+	NextPieceText->setString("Next Piece");
+	window->draw(*NextPieceText);
 	
 }
 
@@ -379,20 +398,24 @@ void MainEngine::MoveObjectDown()
 		MoveRowsDown();
 		playerCoord_x = playGrid_width / 2;
 		playerCoord_y = 1;
-		playerPiece = rand() % 7;
+		
+		playerPiece = nextPlayerPiece;
+		nextPlayerPiece = rand() % 7;
 	}
 	downTriggered = false;
 }
 
-void MainEngine::DrawPiece()
+void MainEngine::DrawPiece(int playerX, int playerY, int playerPiece, int playerRotation)
 {
+	int SpriteIndex = PlayerPieceIndexToGridSpriteIndex(playerPiece);
+
 	for (int blockIndex = 0; blockIndex < 4; blockIndex++)
 	{
 		int xBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].x;
 		int yBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].y;
-		int GridX = playGrid_x_Offset + playerCoord_x + xBlockDelta;
-		int GridY = playGrid_y_Offset + playerCoord_y + yBlockDelta;
-		DrawTile(GridX, GridY, 9);
+		int GridX = playerX + xBlockDelta;
+		int GridY = playerY + yBlockDelta;
+		DrawTile(GridX, GridY, SpriteIndex);
 	}
 }
 
@@ -404,11 +427,16 @@ void MainEngine::SetGridFromPiece() //set grid
 		int yBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].y;
 		int GridX = playGrid_x_Offset + playerCoord_x + xBlockDelta;
 		int GridY = playGrid_y_Offset + playerCoord_y + yBlockDelta;
-		TetrisGrid[GridY][GridX] = (playerPiece + 1) * 4;
+		TetrisGrid[GridY][GridX] = PlayerPieceIndexToGridSpriteIndex(playerPiece);
+		bool isGameOver = GameOver();
+		if (isGameOver)
+		{
+			endGame = true;
+		}
 	}
 
 	Score += 30;
-	//check for completed rows
+	
 }
 
 void MainEngine::RotatePieceLeft()
@@ -449,7 +477,7 @@ retry:
 		bool filled = true;
 		for (int x = 0; x < playGrid_width; x++)
 		{
-			if (TetrisGrid[y+ playGrid_y_Offset][x + playGrid_x_Offset] == 0)
+			if (TetrisGrid[y+ playGrid_y_Offset][x + playGrid_x_Offset] == Tile_Empty)
 			{
 				filled = false;
 				break;
@@ -473,7 +501,7 @@ retry:
 
 			for (int t = 0; t < playGrid_width; t++)
 			{
-				TetrisGrid[playGrid_y_Offset][t + playGrid_x_Offset] = 0;
+				TetrisGrid[playGrid_y_Offset][t + playGrid_x_Offset] = Tile_Empty;
 			}
 			
 			Score += 100;
@@ -481,6 +509,27 @@ retry:
 		}
 		
 	}
+}
+
+int MainEngine::PlayerPieceIndexToGridSpriteIndex(int PieceIndex)
+{
+	// PieceIndex is guaranteed 0-6, 0 = square, 1 = line, etc
+	// TileIndex is the index of which texture to draw for that PieceIndex
+	int SpriteIndex = PieceIndex + 1; // map a piece to a color. tile[1] is yellow, tile[2] is red
+	return SpriteIndex;
+}
+
+bool MainEngine::GameOver()
+{
+	
+	for (int x = 0; x < playGrid_width; x++)
+	{
+		if (TetrisGrid[playGrid_y_Offset][x + playGrid_x_Offset] != 0)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 bool MainEngine::CheckPieceBlocked(int playerX, int playerY, int playerPiece, int playerRotation)
@@ -493,7 +542,7 @@ bool MainEngine::CheckPieceBlocked(int playerX, int playerY, int playerPiece, in
 		int GridX = playGrid_x_Offset + playerX + xBlockDelta;
 		int GridY = playGrid_y_Offset + playerY + yBlockDelta;
 		// if grid is non-empty at DrawX, DrawY, then this piece is blocked
-		if (TetrisGrid[GridY][GridX] != 0)
+		if (TetrisGrid[GridY][GridX] != Tile_Empty)
 		{
 			return true;
 		}

@@ -16,6 +16,10 @@ public:
 	std::vector<std::vector<int>> TetrisGrid;
 	const int GridWidth = 30; 
 	const int GridHeight = 40;
+
+	const int Tile_Empty = 0; // draw a black tile
+	const int Tile_Cyan = 1;
+
 	bool upPressed;
 	bool downPressed;
 	bool leftPressed;
@@ -30,11 +34,14 @@ public:
 	bool LeftRotationPressed;
 	bool LeftRotationTriggered;
 
+	bool endGame = false;
+
 	// player piece
 	int playerCoord_x;
 	int playerCoord_y;
 	int playerPiece; // 0-7
 	int playerRotation; // 0-3
+	int nextPlayerPiece; 
 
 	int playGrid_width = 10;
 	int playGrid_height = 24;
@@ -56,6 +63,16 @@ public:
 	int scoreDisplay_height = 3;
 	int scoreDisplay_coordX = 2;
 	int scoreDisplay_coordY = 2;
+
+
+
+	//next piece display
+
+	sf::Text* NextPieceText;
+	int NextPieceDisplay_width = 6;
+	int NextPieceDisplay_height = 6;
+	int NextPieceDisplay_coordX = 20;
+	int NextPieceDisplay_coordY = 3;
 
 
 
@@ -89,11 +106,15 @@ public:
 	void MoveObjectLeft();
 	void MoveObjectRight();
 	void MoveObjectDown();
-	void DrawPiece();
+	void DrawPiece(int playerX, int playerY, int playerPiece, int playerRotation);
 	void SetGridFromPiece();
 	void RotatePieceLeft();
 	void RotatePieceRight();
 	void MoveRowsDown();
+	int PlayerPieceIndexToGridSpriteIndex(int PieceIndex);
+
+	bool GameOver();
+
 
 	
 };
