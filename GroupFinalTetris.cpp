@@ -23,7 +23,7 @@
 
 int main()
 {
-    srand(NULL);
+    srand(time(NULL));
     MainEngine game;
     game.MainLoop();
 

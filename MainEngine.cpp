@@ -12,6 +12,10 @@ MainEngine::MainEngine()
 	}
 	InitializeGrid();
 	LoadTextureAndSprites();
+
+	Score = 0;
+	TotalLinesCleared = 0;
+
 	upPressed = false;
 	downPressed = false;
 	leftPressed = false;
@@ -26,11 +30,9 @@ MainEngine::MainEngine()
 	LeftRotationPressed = false;
 	LeftRotationTriggered = false;
 
-	playerCoord_x = playGrid_width / 2;
-	playerCoord_y = 1;
-	playerPiece = 1;
-	playerRotation = 0;
+	// set this first, cause CreateNewPiece uses the value of it!
 	nextPlayerPiece = rand() % 7;
+	CreateNewPiece();
 	
 	// load tetris pieces
 	TetrisPieceArray.push_back(Piece_Block());
@@ -45,9 +47,6 @@ MainEngine::MainEngine()
 	bool bLoaded = ScoreFont->loadFromFile("ozone.ttf");
 	ScoreText = new sf::Text(*ScoreFont);
 	NextPieceText = new sf::Text(*ScoreFont);
-
-	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, scoreDisplay_coordY * 32.0f));
-	NextPieceText->setPosition(sf::Vector2f( (NextPieceDisplay_coordX + 3) * 32.0f, (NextPieceDisplay_coordY - 2) * 32.0f));
 
 	bool loaded = SoundBuffer_PieceDrop.loadFromFile("audio/landed.wav");
 	Sound_PieceDrop = new sf::Sound(SoundBuffer_PieceDrop);
@@ -117,6 +116,16 @@ void MainEngine::MainLoop()
 	}
 }
 
+void MainEngine::CreateNewPiece()
+{
+	playerCoord_x = playGrid_width / 2;
+	playerCoord_y = 1;
+	playerPiece = nextPlayerPiece;
+	playerRotation = 0;
+
+	nextPlayerPiece = rand() % 7;
+}
+
 void MainEngine::DrawTile(int x, int y, int sprite_index)
 {
 	sf::Sprite* p = Sprites[sprite_index];
@@ -138,40 +147,6 @@ void MainEngine::LoadTextureAndSprites()
 		sf::Sprite* s1 = new sf::Sprite(*t1);
 		Sprites.push_back(s1);
 	}
-}
-
-
-
-void MainEngine::CreatePiece(int pieceType)
-{
-	switch (pieceType)
-	{
-
-	case 1: //generate squiggle block 
-		break;
-
-	case 2:	//other squiggle
-		break;
-
-	case 3:	//square
-		break;
-
-	case 4: //L
-		break;
-
-	case 5: //_|
-		break;
-
-	case 6: // |
-		
-		break;
-
-	default:
-		break;
-	}
-	
-		
-	
 }
 
 void MainEngine::InitializeGrid()
@@ -255,10 +230,15 @@ void MainEngine::DrawEverything()
 	DrawPiece(playerCoord_x + playGrid_x_Offset, playerCoord_y + playGrid_y_Offset, playerPiece, playerRotation);
 
 	ScoreText->setCharacterSize(24);
+	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, scoreDisplay_coordY * 32.0f));
 	ScoreText->setString("Score: " + std::to_string(Score));
+	window->draw(*ScoreText);
+	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, (scoreDisplay_coordY+1) * 32.0f));
+	ScoreText->setString("Lines: " + std::to_string(TotalLinesCleared));
 	window->draw(*ScoreText);
 
 	NextPieceText->setCharacterSize(32);
+	NextPieceText->setPosition(sf::Vector2f((NextPieceDisplay_coordX + 3) * 32.0f, (NextPieceDisplay_coordY - 2) * 32.0f));
 	NextPieceText->setString("Next Piece");
 	window->draw(*NextPieceText);
 	
@@ -400,16 +380,25 @@ void MainEngine::MoveObjectDown()
 	}
 	else
 	{
-		Sound_PieceDrop->play();
-		SetGridFromPiece();
-		MoveRowsDown();
-		playerCoord_x = playGrid_width / 2;
-		playerCoord_y = 1;
-		
-		playerPiece = nextPlayerPiece;
-		nextPlayerPiece = rand() % 7;
+		PieceDoneFalling();
 	}
+
 	downTriggered = false;
+}
+
+void MainEngine::PieceDoneFalling()
+{
+	Sound_PieceDrop->play();
+	SetGridFromPiece();
+	MoveRowsDown();
+	CreateNewPiece();
+
+	if (DropInterval > 100)
+	{
+		DropInterval -= 5; // milliseconds
+	}
+
+	Score += 30;
 }
 
 void MainEngine::DrawPiece(int playerX, int playerY, int playerPiece, int playerRotation)
@@ -444,7 +433,7 @@ void MainEngine::SetGridFromPiece() //set grid
 		}
 	}
 
-	Score += 30;
+	
 	
 }
 
@@ -453,10 +442,51 @@ void MainEngine::RotatePieceLeft()
 	bool isBlockedRotateLeft = CheckPieceBlocked(playerCoord_x, playerCoord_y, playerPiece, (playerRotation + 3 /* + 4 - 1*/ ) % 4);
 	if (!isBlockedRotateLeft)
 	{
-		
 		playerRotation += 3;
 		playerRotation %= 4;
+	}
+	else
+	{
+		// blocked rotating left. could have hit the left or the right wall with a long piece
 		
+		// okay, could we scoot a piece to the left and then rotate left and be okay?
+		isBlockedRotateLeft = CheckPieceBlocked(playerCoord_x - 1, playerCoord_y, playerPiece, (playerRotation + 3 /* + 4 - 1*/) % 4);
+		if (!isBlockedRotateLeft)
+		{
+			playerRotation += 3;
+			playerRotation %= 4;
+			playerCoord_x -= 1;
+		}
+		else
+		{
+			isBlockedRotateLeft = CheckPieceBlocked(playerCoord_x + 1, playerCoord_y, playerPiece, (playerRotation + 3 /* + 4 - 1*/) % 4);
+			if (!isBlockedRotateLeft)
+			{
+				playerRotation += 3;
+				playerRotation %= 4;
+				playerCoord_x += 1;
+			}
+			else
+			{
+				isBlockedRotateLeft = CheckPieceBlocked(playerCoord_x - 2, playerCoord_y, playerPiece, (playerRotation + 3 /* + 4 - 1*/) % 4);
+				if (!isBlockedRotateLeft)
+				{
+					playerRotation += 3;
+					playerRotation %= 4;
+					playerCoord_x -= 2;
+				}
+				else
+				{
+					isBlockedRotateLeft = CheckPieceBlocked(playerCoord_x + 2, playerCoord_y, playerPiece, (playerRotation + 3 /* + 4 - 1*/) % 4);
+					if (!isBlockedRotateLeft)
+					{
+						playerRotation += 3;
+						playerRotation %= 4;
+						playerCoord_x += 2;
+					}
+				}
+			}
+		}
 	}
 
 	LeftRotationTriggered = false;
@@ -472,12 +502,57 @@ void MainEngine::RotatePieceRight()
 		playerRotation++;
 		playerRotation %= 4;
 	}
-	
+	else
+	{
+		// blocked rotating left. could have hit the left or the right wall with a long piece
+
+		// okay, could we scoot a piece to the left and then rotate left and be okay?
+		isBlockedRotateRight = CheckPieceBlocked(playerCoord_x - 1, playerCoord_y, playerPiece, (playerRotation + 1) % 4);
+		if (!isBlockedRotateRight)
+		{
+			playerRotation++;
+			playerRotation %= 4;
+			playerCoord_x -= 1;
+		}
+		else
+		{
+			isBlockedRotateRight = CheckPieceBlocked(playerCoord_x + 1, playerCoord_y, playerPiece, (playerRotation + 1) % 4);
+			if (!isBlockedRotateRight)
+			{
+				playerRotation++;
+				playerRotation %= 4;
+				playerCoord_x += 1;
+			}
+			else
+			{
+				isBlockedRotateRight = CheckPieceBlocked(playerCoord_x - 2, playerCoord_y, playerPiece, (playerRotation + 1) % 4);
+				if (!isBlockedRotateRight)
+				{
+					playerRotation++;
+					playerRotation %= 4;
+					playerCoord_x -= 2;
+				}
+				else
+				{
+					isBlockedRotateRight = CheckPieceBlocked(playerCoord_x + 2, playerCoord_y, playerPiece, (playerRotation + 1) % 4);
+					if (!isBlockedRotateRight)
+					{
+						playerRotation++;
+						playerRotation %= 4;
+						playerCoord_x += 2;
+					}
+				}
+			}
+		}
+	}
+
 	RightRotationTriggered = false;
 }
 
 void MainEngine::MoveRowsDown()
 {
+	int LinesRemoved = 0;
+
 retry:
 
 	for (int y = playGrid_height - 1; y > 0; y--)
@@ -500,6 +575,8 @@ retry:
 		}
 		else
 		{
+			LinesRemoved++;
+
 			for (int k = y; k >= 1; k--) //move everything down by one
 			{
 				for (int d = 0; d < playGrid_width; d++)
@@ -513,10 +590,16 @@ retry:
 				TetrisGrid[playGrid_y_Offset][t + playGrid_x_Offset] = Tile_Empty;
 			}
 			
-			Score += 100;
 			goto retry;
 		}
 		
+	}
+
+	TotalLinesCleared += LinesRemoved;
+
+	if (LinesRemoved > 0)
+	{
+		this->Score += pow(2, LinesRemoved) * 100;
 	}
 }
 

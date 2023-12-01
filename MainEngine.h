@@ -10,6 +10,7 @@ public:
 	// data ==============
 
 	int Score;
+	int TotalLinesCleared;
 	std::vector<sf::Sprite*> Sprites;
 	std::vector<sf::Texture*> Textures;
 	sf::RenderWindow* window;
@@ -38,7 +39,7 @@ public:
 
 	// piece storage
 	// Tetris Pieces vector, stores TetrisPiece *'s
-	std::vector<TetrisPiece> TetrisPieceArray;
+	std::vector<TetrisPiece> TetrisPieceArray; // these will be derived types with different block offsets
 
 	// player piece
 	int playerCoord_x;
@@ -99,7 +100,7 @@ public:
 
 	void MainLoop();
 
-	void CreatePiece(int pieceType);
+	void CreateNewPiece();
 
 	void InitializeGrid();
 	void DrawEverything();
@@ -114,6 +115,7 @@ public:
 	void RotatePieceRight();
 	void MoveRowsDown();
 	int PlayerPieceIndexToGridSpriteIndex(int PieceIndex);
+	void PieceDoneFalling();
 
 	bool GameOver();
 
