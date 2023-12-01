@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "PieceData.h"
+#include "TetrisPiece.h"
 
 class MainEngine
 {
@@ -36,6 +36,10 @@ public:
 
 	bool endGame = false;
 
+	// piece storage
+	// Tetris Pieces vector, stores TetrisPiece *'s
+	std::vector<TetrisPiece> TetrisPieceArray;
+
 	// player piece
 	int playerCoord_x;
 	int playerCoord_y;
@@ -52,8 +56,6 @@ public:
 	sf::Sound* Sound_PieceDrop;
 	sf::SoundBuffer SoundBuffer_PieceDrop;
 
-	//piece storage
-	
 
 	// score display
 

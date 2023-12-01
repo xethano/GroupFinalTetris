@@ -32,17 +32,24 @@ MainEngine::MainEngine()
 	playerRotation = 0;
 	nextPlayerPiece = rand() % 7;
 	
-	
+	// load tetris pieces
+	TetrisPieceArray.push_back(Piece_Block());
+	TetrisPieceArray.push_back(Piece_Straight());
+	TetrisPieceArray.push_back(Piece_ZigZagL());
+	TetrisPieceArray.push_back(Piece_ZigZagR());
+	TetrisPieceArray.push_back(Piece_EllL());
+	TetrisPieceArray.push_back(Piece_EllR());
+	TetrisPieceArray.push_back(Piece_Tee());	
 
 	ScoreFont = new sf::Font();
 	bool bLoaded = ScoreFont->loadFromFile("ozone.ttf");
 	ScoreText = new sf::Text(*ScoreFont);
 	NextPieceText = new sf::Text(*ScoreFont);
 
-	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32, scoreDisplay_coordY * 32));
-	NextPieceText->setPosition(sf::Vector2f( (NextPieceDisplay_coordX + 3) * 32, (NextPieceDisplay_coordY - 2) * 32));
+	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, scoreDisplay_coordY * 32.0f));
+	NextPieceText->setPosition(sf::Vector2f( (NextPieceDisplay_coordX + 3) * 32.0f, (NextPieceDisplay_coordY - 2) * 32.0f));
 
-	SoundBuffer_PieceDrop.loadFromFile("audio/landed.wav");
+	bool loaded = SoundBuffer_PieceDrop.loadFromFile("audio/landed.wav");
 	Sound_PieceDrop = new sf::Sound(SoundBuffer_PieceDrop);
 
 	/*for (int i = 9; i > 0; i--)
@@ -113,7 +120,7 @@ void MainEngine::MainLoop()
 void MainEngine::DrawTile(int x, int y, int sprite_index)
 {
 	sf::Sprite* p = Sprites[sprite_index];
-	p->setPosition(sf::Vector2f(x * 32, y * 32));
+	p->setPosition(sf::Vector2f(x * 32.0f, y * 32.0f));
 	window->draw(*p);
 }
 
@@ -121,12 +128,12 @@ void MainEngine::LoadTextureAndSprites()
 {
 	//                    Sprite Index          0        1       2         3....
 	std::vector<std::string> SpriteNames = { "Black", "Cyan", "Purple", "Yellow", "Green", "Blue", "White", "Red", "Orange" };
-	int sz = SpriteNames.size();
-	for (int i = 0; i < sz; i++)
+	size_t sz = SpriteNames.size();
+	for (size_t i = 0; i < sz; i++)
 	{
 		std::string filename = "Graphics\\tile_" + SpriteNames[i] + ".png";
 		sf::Texture* t1 = new sf::Texture();
-		t1->loadFromFile(filename);
+		bool loaded = t1->loadFromFile(filename);
 		Textures.push_back(t1);
 		sf::Sprite* s1 = new sf::Sprite(*t1);
 		Sprites.push_back(s1);
@@ -411,8 +418,9 @@ void MainEngine::DrawPiece(int playerX, int playerY, int playerPiece, int player
 
 	for (int blockIndex = 0; blockIndex < 4; blockIndex++)
 	{
-		int xBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].x;
-		int yBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].y;
+		sf::Vector2i BlockXYDelta = TetrisPieceArray[playerPiece].GetBlockXYDelta(playerRotation, blockIndex);
+		int xBlockDelta = BlockXYDelta.x;
+		int yBlockDelta = BlockXYDelta.y;
 		int GridX = playerX + xBlockDelta;
 		int GridY = playerY + yBlockDelta;
 		DrawTile(GridX, GridY, SpriteIndex);
@@ -423,8 +431,9 @@ void MainEngine::SetGridFromPiece() //set grid
 {
 	for (int blockIndex = 0; blockIndex < 4; blockIndex++)
 	{
-		int xBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].x;
-		int yBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].y;
+		sf::Vector2i BlockXYDelta = TetrisPieceArray[playerPiece].GetBlockXYDelta(playerRotation, blockIndex);
+		int xBlockDelta = BlockXYDelta.x;
+		int yBlockDelta = BlockXYDelta.y;
 		int GridX = playGrid_x_Offset + playerCoord_x + xBlockDelta;
 		int GridY = playGrid_y_Offset + playerCoord_y + yBlockDelta;
 		TetrisGrid[GridY][GridX] = PlayerPieceIndexToGridSpriteIndex(playerPiece);
@@ -537,8 +546,9 @@ bool MainEngine::CheckPieceBlocked(int playerX, int playerY, int playerPiece, in
 	// at every piece for the player, see if that grid location is blocked
 	for (int blockIndex = 0; blockIndex < 4; blockIndex++)
 	{
-		int xBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].x;
-		int yBlockDelta = PieceOffsetData[playerPiece][playerRotation][blockIndex].y;
+		sf::Vector2i BlockXYDelta = TetrisPieceArray[playerPiece].GetBlockXYDelta(playerRotation, blockIndex);
+		int xBlockDelta = BlockXYDelta.x;
+		int yBlockDelta = BlockXYDelta.y;
 		int GridX = playGrid_x_Offset + playerX + xBlockDelta;
 		int GridY = playGrid_y_Offset + playerY + yBlockDelta;
 		// if grid is non-empty at DrawX, DrawY, then this piece is blocked
