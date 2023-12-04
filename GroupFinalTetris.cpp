@@ -1,6 +1,8 @@
 // GroupFinalTetris.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
+//needs lib folder
+
 #include <iostream>
 #include "common.h"
 
