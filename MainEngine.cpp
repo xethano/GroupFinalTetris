@@ -13,26 +13,8 @@ MainEngine::MainEngine()
 	InitializeGrid();
 	LoadTextureAndSprites();
 
-	Score = 0;
-	TotalLinesCleared = 0;
-
-	upPressed = false;
-	downPressed = false;
-	leftPressed = false;
-	rightPressed = false;
-	upTriggered = false;
-	downTriggered = false;
-	leftTriggered = false;
-	rightTriggered = false;
-
-	RightRotationPressed = false;
-	RightRotationTriggered = false;
-	LeftRotationPressed = false;
-	LeftRotationTriggered = false;
-
-	// set this first, cause CreateNewPiece uses the value of it!
-	nextPlayerPiece = rand() % 7;
-	CreateNewPiece();
+	showingStartScreen = true;
+	
 	
 	// load tetris pieces
 	TetrisPieceArray.push_back(Piece_Block());
@@ -45,7 +27,8 @@ MainEngine::MainEngine()
 
 	ScoreFont = new sf::Font();
 	bool bLoaded = ScoreFont->loadFromFile("ozone.ttf");
-	ScoreText = new sf::Text(*ScoreFont);
+	GenericText = new sf::Text(*ScoreFont);
+	AnyKeyText = new sf::Text(*ScoreFont);
 	NextPieceText = new sf::Text(*ScoreFont);
 
 	bool loaded = SoundBuffer_PieceDrop.loadFromFile("audio/landed.wav");
@@ -62,6 +45,11 @@ MainEngine::MainEngine()
 MainEngine::~MainEngine()
 {
 	delete Sound_PieceDrop;
+	delete this->AnyKeyText;
+	delete this->GenericText;
+	delete NextPieceText;
+	delete ScoreFont;
+	
 }
 
 void MainEngine::MainLoop()
@@ -92,7 +80,15 @@ void MainEngine::MainLoop()
 				window->close();
 			else
 			{
-				bool b = ProcessInput(event);
+				if (showingStartScreen)
+				{
+					bool b = ProcessInput_StartScreen(event);
+					
+				}
+				else
+				{
+					bool b = ProcessInput_Game(event);
+				}
 			}
 		}
 		
@@ -107,13 +103,49 @@ void MainEngine::MainLoop()
 		}
 
 		// do your drawing and moving and event processing here
-		DrawEverything();
-		MovePieces();
+		if (showingStartScreen)
+		{
+			Draw_StartScreen();
+		}
+		else
+		{
+			Draw_Game();
+			MovePieces();
+		}
+		
 
 		window->display();
 		Sleep(100);
 		
 	}
+}
+
+void MainEngine::StartNewGame()
+{
+	showingStartScreen = false;
+
+	//initialize game stuff
+	Score = 0;
+	TotalLinesCleared = 0;
+
+	upPressed = false;
+	downPressed = false;
+	leftPressed = false;
+	rightPressed = false;
+	upTriggered = false;
+	downTriggered = false;
+	leftTriggered = false;
+	rightTriggered = false;
+
+	RightRotationPressed = false;
+	RightRotationTriggered = false;
+	LeftRotationPressed = false;
+	LeftRotationTriggered = false;
+
+	// set this first, cause CreateNewPiece uses the value of it!
+	nextPlayerPiece = rand() % 7;
+	CreateNewPiece();
+
 }
 
 void MainEngine::CreateNewPiece()
@@ -134,9 +166,9 @@ void MainEngine::DrawTile(int x, int y, int sprite_index)
 }
 
 void MainEngine::LoadTextureAndSprites()
-{
+{	//                                        (grid)     v- pieces start here                                       ... never gets to here
 	//                    Sprite Index          0        1       2         3....
-	std::vector<std::string> SpriteNames = { "Black", "Cyan", "Purple", "Yellow", "Green", "Blue", "White", "Red", "Orange" };
+	std::vector<std::string> SpriteNames = { "Black", "Cyan", "Purple", "Yellow", "Green", "Blue", "Red", "Orange", "noise", "Shadow"};
 	size_t sz = SpriteNames.size();
 	for (size_t i = 0; i < sz; i++)
 	{
@@ -156,7 +188,7 @@ void MainEngine::InitializeGrid()
 		for (int x = 0; x < GridWidth; x++)
 		{
 			
-			TetrisGrid[y][x] = 7;
+			TetrisGrid[y][x] = Tile_Noise;
 		}
 	}
 
@@ -213,7 +245,7 @@ void MainEngine::InitializeGrid()
 	
 }
 
-void MainEngine::DrawEverything()
+void MainEngine::Draw_Game()
 {
 	for (int y = 0; y < GridHeight; y++)
 	{
@@ -224,18 +256,17 @@ void MainEngine::DrawEverything()
 		}
 	}
 
-	
+	DrawShadowPiece();
 	DrawPiece(NextPieceDisplay_coordX + 6, NextPieceDisplay_coordY + 1, nextPlayerPiece, 0);
-
 	DrawPiece(playerCoord_x + playGrid_x_Offset, playerCoord_y + playGrid_y_Offset, playerPiece, playerRotation);
 
-	ScoreText->setCharacterSize(24);
-	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, scoreDisplay_coordY * 32.0f));
-	ScoreText->setString("Score: " + std::to_string(Score));
-	window->draw(*ScoreText);
-	ScoreText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, (scoreDisplay_coordY+1) * 32.0f));
-	ScoreText->setString("Lines: " + std::to_string(TotalLinesCleared));
-	window->draw(*ScoreText);
+	GenericText->setCharacterSize(24);
+	GenericText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, scoreDisplay_coordY * 32.0f));
+	GenericText->setString("Score: " + std::to_string(Score));
+	window->draw(*GenericText);
+	GenericText->setPosition(sf::Vector2f(scoreDisplay_coordX * 32.0f, (scoreDisplay_coordY+1) * 32.0f));
+	GenericText->setString("Lines: " + std::to_string(TotalLinesCleared));
+	window->draw(*GenericText);
 
 	NextPieceText->setCharacterSize(32);
 	NextPieceText->setPosition(sf::Vector2f((NextPieceDisplay_coordX + 3) * 32.0f, (NextPieceDisplay_coordY - 2) * 32.0f));
@@ -244,7 +275,68 @@ void MainEngine::DrawEverything()
 	
 }
 
-bool MainEngine::ProcessInput(const sf::Event& event) // return true if user pressed ESC
+void MainEngine::Draw_StartScreen()
+{
+	GenericText->setCharacterSize(32);
+	GenericText->setPosition(sf::Vector2f(1 * 32.0f, 1 * 32.0f));
+	GenericText->setString("Welcome To Tetris");
+	window->draw(*GenericText);
+
+	GenericText->setCharacterSize(30);
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 5 * 32.0f));
+	GenericText->setString("Controls:");
+	window->draw(*GenericText);
+
+
+	GenericText->setCharacterSize(48);
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 6 * 32.0f));
+	std::string shortenedSZ = szUseControls.substr(0, 30);
+	GenericText->setString(shortenedSZ.c_str());
+	window->draw(*GenericText);
+
+	int32_t tNow = this->gameClock.getElapsedTime().asMilliseconds();
+	if (lastScrollTime == 0 || (tNow - lastScrollTime > scrollDelay))
+	{
+		lastScrollTime = tNow;
+		char ch = szUseControls[0];
+		szUseControls = szUseControls.substr(1) + ch;
+	}
+
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 8 * 32.0f));
+	GenericText->setString("Use Q and E to rotate your piece");
+	window->draw(*GenericText);
+
+	if (lastFlashTime == 0 || tNow - lastFlashTime > flashTimeInterval)
+	{
+		lastFlashTime = tNow;
+		ShowPressKey = !ShowPressKey;
+		int colorValue = rand() % colorVector.size();
+		AnyKeyText->setFillColor(colorVector[colorValue]);
+		int randomMenuBonus = rand() % 1000;
+		if (randomMenuBonus % 100 == 0)
+		{
+			AnyKeyText->setString("Programmed By Ethan and Team");
+		}
+		else
+		{
+			AnyKeyText->setString("Press Any Key to Start");
+		}
+	}
+
+	if (ShowPressKey)
+	{
+		AnyKeyText->setCharacterSize(48);
+		AnyKeyText->setPosition(sf::Vector2f(2 * 32.0f, 32 * 32.0f));
+
+		window->draw(*AnyKeyText);
+	}
+
+	// GenericText->setPosition(sf::Vector2f(2 * 32.0f, 6 * 32.0f));
+	// GenericText->setString("Use the Left, Right, and Down arrows to control the direction of your piece");
+	
+}
+
+bool MainEngine::ProcessInput_Game(const sf::Event& event) // return true if user pressed ESC
 {
 	if (event.type == sf::Event::KeyPressed)
 	{
@@ -346,6 +438,19 @@ bool MainEngine::ProcessInput(const sf::Event& event) // return true if user pre
 	return false;
 }
 
+bool MainEngine::ProcessInput_StartScreen(const sf::Event& event)
+{
+	if (event.type == sf::Event::KeyPressed)
+	{
+		int key = event.KeyPressed;
+		sf::Event::KeyEvent ak = event.key;
+		auto keyCode = ak.scancode;
+
+		StartNewGame();
+		return true;
+	}
+}
+
 void MainEngine::MoveObjectLeft()
 {
 
@@ -401,19 +506,38 @@ void MainEngine::PieceDoneFalling()
 	Score += 30;
 }
 
-void MainEngine::DrawPiece(int playerX, int playerY, int playerPiece, int playerRotation)
+void MainEngine::DrawPiece(int gridX, int gridY, int playerPiece, int playerRotation, bool bIsShadowPiece)
 {
 	int SpriteIndex = PlayerPieceIndexToGridSpriteIndex(playerPiece);
+	if (bIsShadowPiece)
+	{
+		SpriteIndex = Tile_Shadow;
+	}
 
 	for (int blockIndex = 0; blockIndex < 4; blockIndex++)
 	{
 		sf::Vector2i BlockXYDelta = TetrisPieceArray[playerPiece].GetBlockXYDelta(playerRotation, blockIndex);
 		int xBlockDelta = BlockXYDelta.x;
 		int yBlockDelta = BlockXYDelta.y;
-		int GridX = playerX + xBlockDelta;
-		int GridY = playerY + yBlockDelta;
+		int GridX = gridX + xBlockDelta;
+		int GridY = gridY + yBlockDelta;
 		DrawTile(GridX, GridY, SpriteIndex);
 	}
+}
+
+void MainEngine::DrawShadowPiece()
+{
+	// go down from current piece X/Y until we can't go down any more. This is where you draw the shadow piece
+	int yDelta = 0;
+	for (; yDelta < GridHeight; yDelta++)
+	{
+		if (CheckPieceBlocked(playerCoord_x, playerCoord_y + yDelta, playerPiece, playerRotation))
+		{
+			yDelta--; // back up one space!
+			break;
+		}
+	}
+	DrawPiece(playGrid_x_Offset + playerCoord_x, playGrid_y_Offset + playerCoord_y + yDelta, playerPiece, playerRotation, true);
 }
 
 void MainEngine::SetGridFromPiece() //set grid 
