@@ -184,7 +184,7 @@ void MainEngine::LoadTextureAndSprites()
 
 void MainEngine::InitializeGrid()
 {
-	for (int y = 0; y < GridHeight; y++)
+	for (int y = 0; y < GridHeight; y++) //background
 	{
 		for (int x = 0; x < GridWidth; x++)
 		{
