@@ -82,6 +82,7 @@ void MainEngine::MainLoop()
 			{
 				if (showingStartScreen)
 				{
+					// b not used. oh well.
 					bool b = ProcessInput_StartScreen(event);
 					
 				}
@@ -449,6 +450,7 @@ bool MainEngine::ProcessInput_StartScreen(const sf::Event& event)
 		StartNewGame();
 		return true;
 	}
+	return false;
 }
 
 void MainEngine::MoveObjectLeft()
