@@ -72,11 +72,15 @@ public:
 	int playGrid_y_Offset = 8;
 
 	// sounds
+	sf::Sound* Sound_PieceRotate;
+	sf::SoundBuffer SoundBuffer_PieceRotate;
+
 	sf::Sound* Sound_PieceDrop;
 	sf::SoundBuffer SoundBuffer_PieceDrop;
 
 	sf::Music Kazoo;
 	sf::Music gameover_song;
+	
 
 
 	// score display
@@ -94,9 +98,9 @@ public:
 
 	sf::Text* NextPieceText;
 	int NextPieceDisplay_width = 6;
-	int NextPieceDisplay_height = 6;
-	int NextPieceDisplay_coordX = 20;
-	int NextPieceDisplay_coordY = 3;
+	int NextPieceDisplay_height = 7;
+	int NextPieceDisplay_coordX = 19;
+	int NextPieceDisplay_coordY = 4;
 
 	// goofy start screen animation stuff
 	

@@ -44,16 +44,15 @@ MainEngine::MainEngine()
 	bool loaded = SoundBuffer_PieceDrop.loadFromFile("audio/landed.wav");
 	Sound_PieceDrop = new sf::Sound(SoundBuffer_PieceDrop);
 
-	/*for (int i = 9; i > 0; i--)
-	{
-		TetrisGrid[i + playGrid_y][3 + playGrid_x] = 13;
-	}*/
-	// - playerPiece (base rotation on type of player piece)
+	loaded = SoundBuffer_PieceRotate.loadFromFile("audio/rotate.wav");
+	Sound_PieceRotate = new sf::Sound(SoundBuffer_PieceRotate);
+
 	
 }
 
 MainEngine::~MainEngine()
 {
+	delete Sound_PieceRotate;
 	delete Sound_PieceDrop;
 	delete this->AnyKeyText;
 	delete this->GenericText;
@@ -80,7 +79,7 @@ void MainEngine::MainLoop()
 	// create a window
 	window = new sf::RenderWindow(sf::VideoMode(sf::Vector2u(32 * GridWidth, 32 * GridHeight)), "Tetris");
 
-	// here's the loop
+	// main loop
 	while (window->isOpen())
 	{
 		bool b = false;
@@ -124,10 +123,8 @@ void MainEngine::MainLoop()
 			{
 				std::ofstream updated_score("highscore.txt", std::ios::out);
 				updated_score << Highscore;
-
 				updated_score.close();
 
-				
 				window->close();
 				break;
 			}
@@ -145,10 +142,6 @@ void MainEngine::MainLoop()
 				MovePieces();
 			}
 		}
-
-		// do your drawing and moving and event processing here
-		
-		
 
 		window->display();
 		Sleep(100);
@@ -179,7 +172,7 @@ void MainEngine::StartNewGame()
 	LeftRotationPressed = false;
 	LeftRotationTriggered = false;
 
-	// set this first, cause CreateNewPiece uses the value of it!
+	// set this first
 	nextPlayerPiece = rand() % 7;
 	CreateNewPiece();
 
@@ -188,7 +181,7 @@ void MainEngine::StartNewGame()
 void MainEngine::CreateNewPiece()
 {
 	playerCoord_x = playGrid_width / 2;
-	playerCoord_y = 1;
+	playerCoord_y = 0;
 	playerPiece = nextPlayerPiece;
 	playerRotation = 0;
 
@@ -242,7 +235,7 @@ void MainEngine::InitializeGrid()
 	{
 		for (int x = 0; x < NextPieceDisplay_width; x++)
 		{
-			TetrisGrid[y + NextPieceDisplay_coordY -2][x + NextPieceDisplay_coordX + 3] = Tile_Empty;
+			TetrisGrid[y + NextPieceDisplay_coordY - 1][x + NextPieceDisplay_coordX + 3] = Tile_Empty;
 		}
 	}
 
@@ -256,15 +249,6 @@ void MainEngine::InitializeGrid()
 		}
 	}
 
-	/*for (int  i = playGrid_height-2; i < playGrid_height; i++)
-	{
-		for (int y = 0; y < playGrid_width; y++)
-		{
-			TetrisGrid[i + playGrid_y][y + playGrid_x] = 28;
-		}
-		
-	}*/
-
 	for (int y = -1; y <= playGrid_height; y++)
 	{
 		TetrisGrid[y + playGrid_y_Offset][9] = Tile_Cyan;
@@ -277,9 +261,6 @@ void MainEngine::InitializeGrid()
 		TetrisGrid[32][x + playGrid_x_Offset] = Tile_Cyan;
 	}
 
-
-
-	
 }
 
 
@@ -308,7 +289,7 @@ void MainEngine::Draw_Game()
 	window->draw(*GenericText);
 
 	NextPieceText->setCharacterSize(32);
-	NextPieceText->setPosition(sf::Vector2f((NextPieceDisplay_coordX + 3) * 32.0f, (NextPieceDisplay_coordY - 2) * 32.0f));
+	NextPieceText->setPosition(sf::Vector2f((NextPieceDisplay_coordX + 3) * 32.0f, (NextPieceDisplay_coordY - 1) * 32.0f));
 	NextPieceText->setString("Next Piece");
 	window->draw(*NextPieceText);
 	
@@ -375,8 +356,7 @@ void MainEngine::Draw_StartScreen()
 	GenericText->setString("We would like to thank johnathon for the kazoo solo");
 	window->draw(*GenericText);
 
-	// GenericText->setPosition(sf::Vector2f(2 * 32.0f, 6 * 32.0f));
-	// GenericText->setString("Use the Left, Right, and Down arrows to control the direction of your piece");
+	
 	
 }
 
@@ -534,9 +514,6 @@ bool MainEngine::ProcessInput_StartScreen(const sf::Event& event)
 
 bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 {
-
-	
-
 	Draw_GameOverScreen();
 
 	if (event.type == sf::Event::KeyPressed)
@@ -553,18 +530,13 @@ bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 			TotalLinesCleared = 0;
 			window->clear();
 			InitializeGrid();
-
-			
 			return false;
 		}
 
 		if (keyCode == sf::Keyboard::Scan::N)
 		{
 			endGame = true;
-			
-			
 			window->clear();
-			
 			return true;
 		}
 		
@@ -584,8 +556,6 @@ void MainEngine::MoveObjectLeft()
 	{
 		playerCoord_x--;
 	}
-
-	
 	leftTriggered = false; //event handling
 }
 
@@ -596,8 +566,6 @@ void MainEngine::MoveObjectRight()
 	{
 		playerCoord_x++;
 	}
-
-	
 	rightTriggered = false;
 }
 
@@ -664,7 +632,7 @@ void MainEngine::DrawShadowPiece()
 	{
 		if (CheckPieceBlocked(playerCoord_x, playerCoord_y + yDelta, playerPiece, playerRotation))
 		{
-			yDelta--; // back up one space!
+			yDelta--; // back up one space
 			break;
 		}
 	}
@@ -943,11 +911,13 @@ void MainEngine::MovePieces()
 
 	if (LeftRotationTriggered || LeftRotationPressed)
 	{
+		Sound_PieceRotate->play();
 		RotatePieceLeft();
 	}
 
 	if (RightRotationTriggered || RightRotationPressed)
 	{
+		Sound_PieceRotate->play();
 		RotatePieceRight();
 	}
 }
