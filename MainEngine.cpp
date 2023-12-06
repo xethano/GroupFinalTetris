@@ -14,6 +14,11 @@ MainEngine::MainEngine()
 	LoadTextureAndSprites();
 
 	showingStartScreen = true;
+
+	gameover_song.openFromFile("Audio\\GameOver.wav");
+	Kazoo.openFromFile("Audio\\TetrisKazoo.ogg");
+	Kazoo.setVolume(50);
+	
 	
 	
 	// load tetris pieces
@@ -72,6 +77,7 @@ void MainEngine::MainLoop()
 	// here's the loop
 	while (window->isOpen())
 	{
+		bool b = false;
 		//events running 
 		sf::Event event; 
 		while (window->pollEvent(event))
@@ -80,16 +86,25 @@ void MainEngine::MainLoop()
 				window->close();
 			else
 			{
-				if (showingStartScreen)
+				if (endGame)
 				{
-					// b not used. oh well.
-					bool b = ProcessInput_StartScreen(event);
 					
+					 b = ProcessInput_GameOverScreen(event);
 				}
 				else
 				{
-					bool b = ProcessInput_Game(event);
+					if (showingStartScreen)
+					{
+						// b not used. oh well.
+						 b = ProcessInput_StartScreen(event);
+
+					}
+					else
+					{
+						 b = ProcessInput_Game(event);
+					}
 				}
+				
 			}
 		}
 		
@@ -98,21 +113,30 @@ void MainEngine::MainLoop()
 
 		if (endGame)
 		{
-			std::cout << "You lose" << std::endl;
-			window->close();
-			break;
-		}
-
-		// do your drawing and moving and event processing here
-		if (showingStartScreen)
-		{
-			Draw_StartScreen();
+			Draw_GameOverScreen();
+			if (b == true)
+			{
+				std::cout << "You lose" << std::endl;
+				window->close();
+				break;
+			}
+			
 		}
 		else
 		{
-			Draw_Game();
-			MovePieces();
+			if (showingStartScreen)
+			{
+				Draw_StartScreen();
+			}
+			else
+			{
+				Draw_Game();
+				MovePieces();
+			}
 		}
+
+		// do your drawing and moving and event processing here
+		
 		
 
 		window->display();
@@ -124,7 +148,8 @@ void MainEngine::MainLoop()
 void MainEngine::StartNewGame()
 {
 	showingStartScreen = false;
-
+	Kazoo.play();
+	Kazoo.setLoop(true);
 	//initialize game stuff
 	Score = 0;
 	TotalLinesCleared = 0;
@@ -246,6 +271,8 @@ void MainEngine::InitializeGrid()
 	
 }
 
+
+
 void MainEngine::Draw_Game()
 {
 	for (int y = 0; y < GridHeight; y++)
@@ -332,9 +359,36 @@ void MainEngine::Draw_StartScreen()
 		window->draw(*AnyKeyText);
 	}
 
+	GenericText->setCharacterSize(26);
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 12 * 32.0f));
+	GenericText->setString("We would like to thank johnathon for the kazoo solo");
+	window->draw(*GenericText);
+
 	// GenericText->setPosition(sf::Vector2f(2 * 32.0f, 6 * 32.0f));
 	// GenericText->setString("Use the Left, Right, and Down arrows to control the direction of your piece");
 	
+}
+
+void MainEngine::Draw_GameOverScreen()
+{
+	GenericText->setCharacterSize(80);
+	GenericText->setPosition(sf::Vector2f(8 * 32.0f, 1 * 32.0f));
+	GenericText->setString("Game Over");
+	window->draw(*GenericText);
+
+	GenericText->setCharacterSize(32);
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 5 * 32.0f));
+	GenericText->setString("Highscore");
+	window->draw(*GenericText);
+
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 16 * 32.0f));
+	GenericText->setString("Press Y to continue");
+	window->draw(*GenericText);
+
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 18 * 32.0f));
+	GenericText->setString("Press N to exit");
+	window->draw(*GenericText);
+
 }
 
 bool MainEngine::ProcessInput_Game(const sf::Event& event) // return true if user pressed ESC
@@ -453,6 +507,44 @@ bool MainEngine::ProcessInput_StartScreen(const sf::Event& event)
 	return false;
 }
 
+bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
+{
+	Draw_GameOverScreen();
+	if (event.type == sf::Event::KeyPressed)
+	{
+		int key = event.KeyPressed;
+		sf::Event::KeyEvent ak = event.key;
+		auto keyCode = ak.scancode;
+
+		if (keyCode == sf::Keyboard::Scan::Y)
+		{
+			endGame = false;
+			showingStartScreen = true;
+			Score = 0;
+			TotalLinesCleared = 0;
+			window->clear();
+			InitializeGrid();
+			return false;
+		}
+
+		if (keyCode == sf::Keyboard::Scan::N)
+		{
+			endGame = true;
+			
+			
+			window->clear();
+			
+			return true;
+		}
+		
+		endGame = true;
+		return false;
+	}
+	
+}
+
+
+
 void MainEngine::MoveObjectLeft()
 {
 
@@ -556,6 +648,9 @@ void MainEngine::SetGridFromPiece() //set grid
 		if (isGameOver)
 		{
 			endGame = true;
+			Kazoo.stop();
+			gameover_song.setVolume(100);
+			gameover_song.play();
 		}
 	}
 
@@ -739,14 +834,17 @@ int MainEngine::PlayerPieceIndexToGridSpriteIndex(int PieceIndex)
 
 bool MainEngine::GameOver()
 {
-	
-	for (int x = 0; x < playGrid_width; x++)
+	for (int y = playGrid_y_Offset; y < playGrid_y_Offset+2; y++)
 	{
-		if (TetrisGrid[playGrid_y_Offset][x + playGrid_x_Offset] != 0)
+		for (int x = 0; x < playGrid_width; x++)
 		{
-			return true;
+			if (TetrisGrid[y][x + playGrid_x_Offset] != 0)
+			{
+				return true;
+			}
 		}
 	}
+	
 	return false;
 }
 

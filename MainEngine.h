@@ -74,6 +74,9 @@ public:
 	sf::Sound* Sound_PieceDrop;
 	sf::SoundBuffer SoundBuffer_PieceDrop;
 
+	sf::Music Kazoo;
+	sf::Music gameover_song;
+
 
 	// score display
 
@@ -125,6 +128,9 @@ public:
 
 	// start screen
 	bool ProcessInput_StartScreen(const sf::Event& event); // return true if user pressed ESC
+
+	bool ProcessInput_GameOverScreen(const sf::Event& event);
+	void Draw_GameOverScreen(); 
 
 	// in-game loop functions while playing
 	void StartNewGame();
