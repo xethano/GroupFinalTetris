@@ -36,6 +36,15 @@
 int main()
 {
     srand(time(NULL));
+
+
+    sf::Music Kazoo;
+    Kazoo.openFromFile("Audio\\TetrisKazoo.ogg");
+    Kazoo.setVolume(50);
+    Kazoo.play();
+    Kazoo.setLoop(true);
+
+
     MainEngine game;
     game.MainLoop();
 
