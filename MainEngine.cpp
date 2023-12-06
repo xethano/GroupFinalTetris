@@ -1,6 +1,7 @@
 #include "common.h"
 #include "MainEngine.h"
 #include <Windows.h>
+#include <fstream>
 #include <iostream>
 
 MainEngine::MainEngine()
@@ -19,7 +20,11 @@ MainEngine::MainEngine()
 	Kazoo.openFromFile("Audio\\TetrisKazoo.ogg");
 	Kazoo.setVolume(50);
 	
+	std::ifstream score_text("highscore.txt", std::ios::in);
 	
+	
+	score_text >> Highscore;
+	score_text.close();
 	
 	// load tetris pieces
 	TetrisPieceArray.push_back(Piece_Block());
@@ -54,7 +59,8 @@ MainEngine::~MainEngine()
 	delete this->GenericText;
 	delete NextPieceText;
 	delete ScoreFont;
-	
+
+
 }
 
 void MainEngine::MainLoop()
@@ -116,7 +122,12 @@ void MainEngine::MainLoop()
 			Draw_GameOverScreen();
 			if (b == true)
 			{
-				std::cout << "You lose" << std::endl;
+				std::ofstream updated_score("highscore.txt", std::ios::out);
+				updated_score << Highscore;
+
+				updated_score.close();
+
+				
 				window->close();
 				break;
 			}
@@ -376,10 +387,24 @@ void MainEngine::Draw_GameOverScreen()
 	GenericText->setString("Game Over");
 	window->draw(*GenericText);
 
-	GenericText->setCharacterSize(32);
+	
+
+	GenericText->setCharacterSize(40);
 	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 5 * 32.0f));
-	GenericText->setString("Highscore");
+	GenericText->setString("Highscore: " + std::to_string(Highscore));
 	window->draw(*GenericText);
+
+	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 7 * 32.0f));
+	GenericText->setString("Your Score: " + std::to_string(Score));
+	window->draw(*GenericText);
+
+	if (Score == Highscore)
+	{
+		GenericText->setPosition(sf::Vector2f(2 * 32.0f, 9 * 32.0f));
+		GenericText->setString("New Highscore!");
+		window->draw(*GenericText);
+	}
+	
 
 	GenericText->setPosition(sf::Vector2f(2 * 32.0f, 16 * 32.0f));
 	GenericText->setString("Press Y to continue");
@@ -509,7 +534,11 @@ bool MainEngine::ProcessInput_StartScreen(const sf::Event& event)
 
 bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 {
+
+	
+
 	Draw_GameOverScreen();
+
 	if (event.type == sf::Event::KeyPressed)
 	{
 		int key = event.KeyPressed;
@@ -524,6 +553,8 @@ bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 			TotalLinesCleared = 0;
 			window->clear();
 			InitializeGrid();
+
+			
 			return false;
 		}
 
@@ -589,12 +620,18 @@ void MainEngine::PieceDoneFalling()
 {
 	Sound_PieceDrop->play();
 	SetGridFromPiece();
+
+	if (endGame)
+	{
+		return;
+	}
+
 	MoveRowsDown();
 	CreateNewPiece();
 
 	if (DropInterval > 100)
 	{
-		DropInterval -= 5; // milliseconds
+		DropInterval -= 10; // milliseconds
 	}
 
 	Score += 30;
@@ -651,6 +688,14 @@ void MainEngine::SetGridFromPiece() //set grid
 			Kazoo.stop();
 			gameover_song.setVolume(100);
 			gameover_song.play();
+		}
+	}
+
+	if (endGame)
+	{
+		if (Score > Highscore)
+		{
+			Highscore = Score;
 		}
 	}
 

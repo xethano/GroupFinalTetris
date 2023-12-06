@@ -41,4 +41,7 @@
       <Filter>Source Files</Filter>
     </Font>
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="highscore.txt" />
+  </ItemGroup>
 </Project>

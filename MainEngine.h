@@ -52,6 +52,7 @@ public:
 	int playerRotation; // 0-3
 	int nextPlayerPiece; 
 	int Score;
+	int Highscore;
 	int TotalLinesCleared;
 
 	// constants that define how the screen looks

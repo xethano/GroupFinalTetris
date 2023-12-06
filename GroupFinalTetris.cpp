@@ -4,6 +4,7 @@
 //needs lib folder
 
 #include <iostream>
+#include <fstream>
 #include "common.h"
 
 #if _DEBUG
@@ -36,13 +37,11 @@
 int main()
 {
     srand(time(NULL));
-
-
-   
-
-
     MainEngine game;
     game.MainLoop();
+
+    
+
 
     return 0;
 }
