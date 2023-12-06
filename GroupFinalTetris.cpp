@@ -40,9 +40,6 @@ int main()
     MainEngine game;
     game.MainLoop();
 
-    
-
-
     return 0;
 }
 

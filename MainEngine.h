@@ -134,6 +134,7 @@ public:
 	// start screen
 	bool ProcessInput_StartScreen(const sf::Event& event); // return true if user pressed ESC
 
+	//gameover screen
 	bool ProcessInput_GameOverScreen(const sf::Event& event);
 	void Draw_GameOverScreen(); 
 

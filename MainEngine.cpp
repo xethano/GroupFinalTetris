@@ -11,6 +11,7 @@ MainEngine::MainEngine()
 	{
 		xVector.resize(GridWidth);
 	}
+
 	InitializeGrid();
 	LoadTextureAndSprites();
 
@@ -20,9 +21,7 @@ MainEngine::MainEngine()
 	Kazoo.openFromFile("Audio\\TetrisKazoo.ogg");
 	Kazoo.setVolume(50);
 	
-	std::ifstream score_text("highscore.txt", std::ios::in);
-	
-	
+	std::ifstream score_text("highscore.txt", std::ios::in); //get current highscore off file
 	score_text >> Highscore;
 	score_text.close();
 	
@@ -35,7 +34,7 @@ MainEngine::MainEngine()
 	TetrisPieceArray.push_back(Piece_EllR());
 	TetrisPieceArray.push_back(Piece_Tee());	
 
-	ScoreFont = new sf::Font();
+	ScoreFont = new sf::Font();												//setting up text and font
 	bool bLoaded = ScoreFont->loadFromFile("ozone.ttf");
 	GenericText = new sf::Text(*ScoreFont);
 	AnyKeyText = new sf::Text(*ScoreFont);
@@ -58,8 +57,6 @@ MainEngine::~MainEngine()
 	delete this->GenericText;
 	delete NextPieceText;
 	delete ScoreFont;
-
-
 }
 
 void MainEngine::MainLoop()
@@ -151,10 +148,11 @@ void MainEngine::MainLoop()
 
 void MainEngine::StartNewGame()
 {
+	//this is like a mock constructor in some senses
 	showingStartScreen = false;
 	Kazoo.play();
 	Kazoo.setLoop(true);
-	//initialize game stuff
+	
 	Score = 0;
 	TotalLinesCleared = 0;
 
@@ -178,7 +176,7 @@ void MainEngine::StartNewGame()
 
 }
 
-void MainEngine::CreateNewPiece()
+void MainEngine::CreateNewPiece() //controls piece creation and where the piece will generate
 {
 	playerCoord_x = playGrid_width / 2;
 	playerCoord_y = 0;
@@ -217,7 +215,6 @@ void MainEngine::InitializeGrid()
 	{
 		for (int x = 0; x < GridWidth; x++)
 		{
-			
 			TetrisGrid[y][x] = Tile_Noise;
 		}
 	}
@@ -231,7 +228,7 @@ void MainEngine::InitializeGrid()
 		}
 	}
 
-	for (int y = 0; y < NextPieceDisplay_height; y++)
+	for (int y = 0; y < NextPieceDisplay_height; y++) //next piece display window
 	{
 		for (int x = 0; x < NextPieceDisplay_width; x++)
 		{
@@ -267,7 +264,7 @@ void MainEngine::InitializeGrid()
 
 void MainEngine::Draw_Game()
 {
-	for (int y = 0; y < GridHeight; y++)
+	for (int y = 0; y < GridHeight; y++) //draws grid to screen
 	{
 		for (int x = 0; x < GridWidth; x++)
 		{
@@ -514,7 +511,7 @@ bool MainEngine::ProcessInput_StartScreen(const sf::Event& event)
 
 bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 {
-	Draw_GameOverScreen();
+	Draw_GameOverScreen(); //draw the window before processing the input
 
 	if (event.type == sf::Event::KeyPressed)
 	{
@@ -522,7 +519,7 @@ bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 		sf::Event::KeyEvent ak = event.key;
 		auto keyCode = ak.scancode;
 
-		if (keyCode == sf::Keyboard::Scan::Y)
+		if (keyCode == sf::Keyboard::Scan::Y) //continue and reset to default game 
 		{
 			endGame = false;
 			showingStartScreen = true;
@@ -533,7 +530,7 @@ bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 			return false;
 		}
 
-		if (keyCode == sf::Keyboard::Scan::N)
+		if (keyCode == sf::Keyboard::Scan::N) //exit program 
 		{
 			endGame = true;
 			window->clear();
@@ -545,8 +542,6 @@ bool MainEngine::ProcessInput_GameOverScreen(const sf::Event& event)
 	}
 	
 }
-
-
 
 void MainEngine::MoveObjectLeft()
 {
